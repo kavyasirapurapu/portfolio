@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fitness Tracker Demo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .demo-nav { padding: 1rem 5%; display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100;}
+        .demo-nav-logo { font-size: 1.5rem; font-weight: 700; color: #fff;}
+        
+        .tracker-container { max-width: 800px; margin: 4rem auto; padding: 0 2rem;}
+        .dashboard-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;}
+        .dash-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 1.5rem; display: flex; align-items: center; gap: 1rem;}
+        .dash-icon { width: 50px; height: 50px; background: rgba(16, 185, 129, 0.2); color: #10b981; border-radius: 10px; display: flex; align-items: center; justify-content: center;}
+        
+        .form-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 2rem; margin-bottom: 2rem;}
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-size: 0.9rem;}
+        .form-group input, .form-group select { width: 100%; padding: 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.2); color: white; font-family: 'Inter', sans-serif;}
+        
+        .workout-list { list-style: none; padding: 0;}
+        .workout-item { background: rgba(255, 255, 255, 0.05); border-left: 4px solid #10b981; margin-bottom: 0.5rem; padding: 1rem; border-radius: 0 8px 8px 0; display: flex; justify-content: space-between; align-items: center;}
+        
+        .chart-container { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem; position: relative; height: 300px; width: 100%;}
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="bg-shape shape-1"></div>
+    <div class="bg-shape shape-2"></div>
+    <div class="bg-shape shape-3"></div>
+
+    <nav class="demo-nav">
+        <a href="index.html" style="color: white; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;"><i data-lucide="arrow-left"></i> Back</a>
+        <div class="demo-nav-logo">FitTrack<span style="color: #10b981;">.</span></div>
+        <div>User</div>
+    </nav>
+
+    <main class="tracker-container">
+        <h1 class="hero-title" style="font-size: 2.5rem; text-align: center; margin-bottom: 2rem;">Your Dashboard</h1>
+        
+        <div class="dashboard-cards">
+            <div class="dash-card">
+                <div class="dash-icon"><i data-lucide="flame"></i></div>
+                <div>
+                    <h3 style="font-size: 1.5rem; margin: 0;" id="calories">0</h3>
+                    <p style="margin: 0; color: #94a3b8; font-size: 0.9rem;">Calories Burned</p>
+                </div>
+            </div>
+            <div class="dash-card">
+                <div class="dash-icon" style="color: #3b82f6; background: rgba(59, 130, 246, 0.2);"><i data-lucide="clock"></i></div>
+                <div>
+                    <h3 style="font-size: 1.5rem; margin: 0;" id="minutes">0</h3>
+                    <p style="margin: 0; color: #94a3b8; font-size: 0.9rem;">Active Minutes</p>
+                </div>
+            </div>
+            <div class="dash-card" style="display: flex; justify-content: space-between; align-items: center; position: relative;">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div class="progress-ring-container" style="position: relative; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                        <svg width="60" height="60" style="transform: rotate(-90deg);">
+                            <circle cx="30" cy="30" r="24" stroke="rgba(255,255,255,0.05)" stroke-width="5" fill="transparent"/>
+                            <circle id="goal-progress-bar" cx="30" cy="30" r="24" stroke="#10b981" stroke-width="5" fill="transparent"
+                                stroke-dasharray="150.79" stroke-dashoffset="150.79" style="transition: stroke-dashoffset 0.5s ease; stroke-linecap: round;"/>
+                        </svg>
+                        <span id="goal-pct" style="position: absolute; font-size: 0.8rem; font-weight: 700; color: #fff;">0%</span>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 1.3rem; margin: 0;"><span id="daily-progress">0</span> <span style="font-size: 0.8rem; color: #94a3b8;">/ <span id="daily-goal">1500</span> kcal</span></h3>
+                        <p style="margin: 0; color: #94a3b8; font-size: 0.85rem; display: flex; align-items: center; gap: 0.35rem;">
+                            Calorie Goal
+                            <a href="#" id="edit-goal-btn" style="color: #10b981; display: inline-flex; align-items: center;" title="Set Daily Goal"><i data-lucide="edit-2" style="width: 14px; height: 14px;"></i></a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-controls" style="display: flex; gap: 0.5rem; margin-bottom: 1rem; justify-content: flex-end;">
+            <button class="btn-primary chart-btn" id="btn-calories" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background: #10b981; border-color: #10b981; box-shadow: none;">Calories</button>
+            <button class="btn-secondary chart-btn" id="btn-minutes" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; backdrop-filter: none; background: rgba(255,255,255,0.05);">Active Minutes</button>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="fitnessChart"></canvas>
+        </div>
+
+        <div class="form-card">
+            <h2 style="margin-bottom: 1.5rem;">Log a Workout</h2>
+            <form id="workout-form" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label>Activity Type</label>
+                    <select id="activity" required style="color: white;">
+                        <option value="Running" style="color: black;">Running</option>
+                        <option value="Cycling" style="color: black;">Cycling</option>
+                        <option value="Weightlifting" style="color: black;">Weightlifting</option>
+                        <option value="Yoga" style="color: black;">Yoga</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Duration (minutes)</label>
+                    <input type="number" id="duration" min="1" required placeholder="e.g. 30">
+                </div>
+                <div class="form-group">
+                    <label>Calories Burned (optional)</label>
+                    <input type="number" id="cals" min="0" placeholder="e.g. 300">
+                </div>
+                <button type="submit" class="btn-primary" style="grid-column: 1 / -1; background: #10b981; border-color: #10b981;">Add Workout</button>
+            </form>
+        </div>
+
+        <h2 style="margin-bottom: 1rem;">Recent Activity</h2>
+        <ul class="workout-list" id="workout-list">
+            <!-- Workouts will appear here -->
+        </ul>
+    </main>
+
+    <script>
+        lucide.createIcons();
+        
+        const form = document.getElementById('workout-form');
+        const list = document.getElementById('workout-list');
+        const caloriesEl = document.getElementById('calories');
+        const minutesEl = document.getElementById('minutes');
+        const dailyProgressEl = document.getElementById('daily-progress');
+        const dailyGoalEl = document.getElementById('daily-goal');
+        const goalProgressBar = document.getElementById('goal-progress-bar');
+        const goalPctEl = document.getElementById('goal-pct');
+        const editGoalBtn = document.getElementById('edit-goal-btn');
+        
+        const btnCalories = document.getElementById('btn-calories');
+        const btnMinutes = document.getElementById('btn-minutes');
+
+        // Load data from Local Storage
+        let workouts = JSON.parse(localStorage.getItem('fittrack_workouts')) || [];
+        let dailyGoal = parseInt(localStorage.getItem('fittrack_goal')) || 1500;
+        let currentMetric = 'calories'; // 'calories' or 'minutes'
+
+        // Base/historical week data (Mon-Sat)
+        const weeklyBase = {
+            calories: [0, 300, 250, 0, 400, 150],
+            minutes: [0, 40, 30, 0, 50, 20]
+        };
+
+        // Initialize UI values
+        dailyGoalEl.textContent = dailyGoal;
+
+        // Helper: format dates
+        const getTodayDateString = () => {
+            const today = new Date();
+            return today.toDateString(); // e.g. "Fri Jun 12 2026"
+        };
+
+        // Update Dashboard Summary Stats & Chart Data
+        const updateDashboard = () => {
+            let totalCalsBurned = 1100; // historical base
+            let totalActiveMins = 140;  // historical base
+            let todayCals = 0;
+            let todayMins = 0;
+            const todayStr = getTodayDateString();
+
+            // Clear the visual list first
+            list.innerHTML = '';
+
+            // Calculate totals and render workouts list
+            workouts.forEach(workout => {
+                totalCalsBurned += workout.cals;
+                totalActiveMins += workout.duration;
+
+                if (workout.date === todayStr) {
+                    todayCals += workout.cals;
+                    todayMins += workout.duration;
+                }
+
+                // Append item to list
+                const li = document.createElement('li');
+                li.className = 'workout-item';
+                li.innerHTML = `
+                    <div>
+                        <strong>${workout.activity}</strong>
+                        <div style="font-size: 0.85rem; color: #94a3b8;">${workout.date === todayStr ? 'Today' : workout.date}</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="text-align: right;">
+                            <strong>${workout.duration} min</strong>
+                            <div style="font-size: 0.85rem; color: #10b981;">${workout.cals} kcal</div>
+                        </div>
+                        <button class="delete-workout-btn" data-id="${workout.id}" style="background: transparent; border: none; color: #ef4444; cursor: pointer; display: flex; align-items: center;" title="Delete Workout"><i data-lucide="trash-2" style="width: 16px; height: 16px;"></i></button>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+
+            lucide.createIcons();
+
+            // Setup delete handlers
+            document.querySelectorAll('.delete-workout-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.currentTarget.getAttribute('data-id');
+                    deleteWorkout(id);
+                });
+            });
+
+            // Update stats cards
+            caloriesEl.textContent = totalCalsBurned;
+            minutesEl.textContent = totalActiveMins;
+            dailyProgressEl.textContent = todayCals;
+
+            // Update Goal Progress Ring
+            const progressPct = Math.min(100, Math.round((todayCals / dailyGoal) * 100));
+            goalPctEl.textContent = `${progressPct}%`;
+            
+            const circumference = 2 * Math.PI * 24; // 150.796
+            const offset = circumference - (progressPct / 100) * circumference;
+            goalProgressBar.style.strokeDashoffset = offset;
+
+            // Update Chart Data for 'Today'
+            const currentCalsData = [...weeklyBase.calories, todayCals];
+            const currentMinsData = [...weeklyBase.minutes, todayMins];
+
+            if (currentMetric === 'calories') {
+                fitnessChart.data.datasets[0].data = currentCalsData;
+            } else {
+                fitnessChart.data.datasets[0].data = currentMinsData;
+            }
+            fitnessChart.update();
+        };
+
+        // Delete workout
+        const deleteWorkout = (id) => {
+            workouts = workouts.filter(w => w.id !== id);
+            localStorage.setItem('fittrack_workouts', JSON.stringify(workouts));
+            updateDashboard();
+        };
+
+        // Initialize Chart.js
+        const ctx = document.getElementById('fitnessChart').getContext('2d');
+        const fitnessChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Today'],
+                datasets: [{
+                    label: 'Calories Burned',
+                    data: [0, 300, 250, 0, 400, 150, 0],
+                    backgroundColor: 'rgba(16, 185, 129, 0.5)',
+                    borderColor: '#10b981',
+                    borderWidth: 2,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94a3b8' } },
+                    x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                },
+                plugins: {
+                    legend: { labels: { color: '#fff' } }
+                }
+            }
+        });
+
+        // Form Submit Handler
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const activity = document.getElementById('activity').value;
+            const duration = parseInt(document.getElementById('duration').value);
+            const cals = parseInt(document.getElementById('cals').value) || (duration * 8); 
+            
+            const newWorkout = {
+                id: Math.random().toString(36).substr(2, 9),
+                activity,
+                duration,
+                cals,
+                date: getTodayDateString()
+            };
+
+            workouts.unshift(newWorkout);
+            localStorage.setItem('fittrack_workouts', JSON.stringify(workouts));
+            
+            updateDashboard();
+            form.reset();
+        });
+
+        // Edit Daily Goal Button Handler
+        editGoalBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const newGoal = prompt('Set your daily calorie goal (kcal):', dailyGoal);
+            if (newGoal && !isNaN(newGoal) && parseInt(newGoal) > 0) {
+                dailyGoal = parseInt(newGoal);
+                localStorage.setItem('fittrack_goal', dailyGoal);
+                dailyGoalEl.textContent = dailyGoal;
+                updateDashboard();
+            }
+        });
+
+        // Metric Toggle buttons
+        btnCalories.addEventListener('click', () => {
+            currentMetric = 'calories';
+            
+            // UI Toggle styles
+            btnCalories.className = 'btn-primary chart-btn';
+            btnCalories.style.background = '#10b981';
+            btnCalories.style.borderColor = '#10b981';
+            btnCalories.style.color = 'white';
+
+            btnMinutes.className = 'btn-secondary chart-btn';
+            btnMinutes.style.background = 'rgba(255,255,255,0.05)';
+            btnMinutes.style.color = 'var(--text-primary)';
+            btnMinutes.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+
+            // Update Chart
+            fitnessChart.data.datasets[0].label = 'Calories Burned';
+            fitnessChart.data.datasets[0].backgroundColor = 'rgba(16, 185, 129, 0.5)';
+            fitnessChart.data.datasets[0].borderColor = '#10b981';
+            
+            updateDashboard();
+        });
+
+        btnMinutes.addEventListener('click', () => {
+            currentMetric = 'minutes';
+
+            // UI Toggle styles
+            btnMinutes.className = 'btn-primary chart-btn';
+            btnMinutes.style.background = '#3b82f6';
+            btnMinutes.style.borderColor = '#3b82f6';
+            btnMinutes.style.color = 'white';
+
+            btnCalories.className = 'btn-secondary chart-btn';
+            btnCalories.style.background = 'rgba(255,255,255,0.05)';
+            btnCalories.style.color = 'var(--text-primary)';
+            btnCalories.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+
+            // Update Chart
+            fitnessChart.data.datasets[0].label = 'Active Minutes';
+            fitnessChart.data.datasets[0].backgroundColor = 'rgba(59, 130, 246, 0.5)';
+            fitnessChart.data.datasets[0].borderColor = '#3b82f6';
+
+            updateDashboard();
+        });
+
+        // Initial Load
+        updateDashboard();
+    </script>
+</body>
+</html>

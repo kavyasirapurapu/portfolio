@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Chat Demo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { overflow: hidden; } /* Prevent scrolling for chat app feel */
+        .demo-nav { padding: 1rem 5%; display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid rgba(255,255,255,0.1);}
+        .demo-nav-logo { font-size: 1.5rem; font-weight: 700; color: #fff;}
+        
+        .chat-container { display: flex; height: calc(100vh - 70px); max-width: 1200px; margin: 0 auto;}
+        
+        /* Sidebar */
+        .sidebar { width: 300px; background: rgba(0,0,0,0.2); border-right: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; }
+        .sidebar-header { padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); font-weight: 600;}
+        .contact-list { list-style: none; padding: 0; margin: 0; overflow-y: auto;}
+        .contact { padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1rem; cursor: pointer; transition: background 0.2s; border-bottom: 1px solid rgba(255,255,255,0.05);}
+        .contact:hover { background: rgba(255,255,255,0.05); }
+        .contact.active { background: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b;}
+        .avatar { width: 40px; height: 40px; border-radius: 50%; background: #334155; display: flex; align-items: center; justify-content: center; color: white;}
+        .avatar.online::after { content: ''; width: 10px; height: 10px; background: #10b981; border-radius: 50%; position: absolute; margin-top: 30px; margin-left: 30px; border: 2px solid #0f172a;}
+        .contact-info h4 { margin: 0 0 0.2rem 0; font-size: 1rem;}
+        .contact-info p { margin: 0; font-size: 0.8rem; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;}
+        
+        /* Main Chat Area */
+        .chat-area { flex: 1; display: flex; flex-direction: column; background: rgba(255,255,255,0.02);}
+        .chat-header { padding: 1rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 1rem; background: rgba(0,0,0,0.1);}
+        .chat-messages { flex: 1; padding: 2rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem;}
+        
+        .message { max-width: 70%; padding: 1rem; border-radius: 12px; line-height: 1.4; position: relative; animation: fadeIn 0.3s ease;}
+        .message.received { background: rgba(255,255,255,0.1); border-bottom-left-radius: 0; align-self: flex-start;}
+        .message.sent { background: #f59e0b; color: white; border-bottom-right-radius: 0; align-self: flex-end;}
+        .message-time { font-size: 0.7rem; color: rgba(255,255,255,0.6); margin-top: 0.5rem; text-align: right;}
+        
+        /* Input Area */
+        .chat-input-area { padding: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); display: flex; gap: 1rem; align-items: center;}
+        .chat-input { flex: 1; padding: 1rem 1.5rem; border-radius: 30px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.2); color: white; font-family: 'Inter', sans-serif;}
+        .chat-input:focus { outline: none; border-color: #f59e0b; }
+        .send-btn { width: 50px; height: 50px; border-radius: 50%; background: #f59e0b; color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s;}
+        .send-btn:hover { transform: scale(1.05); }
+        .send-btn:active { transform: scale(0.95); }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Typing indicator */
+        .typing { display: none; padding: 1rem; background: rgba(255,255,255,0.1); border-radius: 12px; border-bottom-left-radius: 0; width: fit-content; align-self: flex-start; margin-top: 1rem;}
+        .typing span { display: inline-block; width: 6px; height: 6px; background: #94a3b8; border-radius: 50%; margin: 0 2px; animation: bounce 1s infinite;}
+        .typing span:nth-child(2) { animation-delay: 0.2s; }
+        .typing span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+        
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-shape shape-1"></div>
+    <div class="bg-shape shape-2"></div>
+    <div class="bg-shape shape-3"></div>
+
+    <nav class="demo-nav">
+        <a href="index.html" style="color: white; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;"><i data-lucide="arrow-left"></i> Back</a>
+        <div class="demo-nav-logo">Chat<span style="color: #f59e0b;">App</span></div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;"><div class="avatar" style="width: 30px; height: 30px;"><i data-lucide="user" style="width:15px;"></i></div> Kavya</div>
+    </nav>
+
+    <div class="chat-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                Recent Chats
+            </div>
+            <ul class="contact-list">
+                <li class="contact active" data-room-id="alex">
+                    <div class="avatar online"><i data-lucide="code"></i></div>
+                    <div class="contact-info" style="flex: 1;">
+                        <h4>Alex Developer</h4>
+                        <p class="preview-text" id="preview-alex">The API looks great! Let me know if...</p>
+                    </div>
+                    <span class="unread-badge" id="unread-alex" style="display: none; background: #f59e0b; color: white; border-radius: 50%; font-size: 0.75rem; width: 18px; height: 18px; text-align: center; line-height: 18px; font-weight: 700;">0</span>
+                </li>
+                <li class="contact" data-room-id="sarah">
+                    <div class="avatar"><i data-lucide="palette"></i></div>
+                    <div class="contact-info" style="flex: 1;">
+                        <h4>Sarah Designer</h4>
+                        <p class="preview-text" id="preview-sarah">I updated the Figma file.</p>
+                    </div>
+                    <span class="unread-badge" id="unread-sarah" style="display: none; background: #f59e0b; color: white; border-radius: 50%; font-size: 0.75rem; width: 18px; height: 18px; text-align: center; line-height: 18px; font-weight: 700;">0</span>
+                </li>
+                <li class="contact" data-room-id="team">
+                    <div class="avatar online"><i data-lucide="users"></i></div>
+                    <div class="contact-info" style="flex: 1;">
+                        <h4>Project Team</h4>
+                        <p class="preview-text" id="preview-team">Meeting at 3 PM today.</p>
+                    </div>
+                    <span class="unread-badge" id="unread-team" style="display: none; background: #f59e0b; color: white; border-radius: 50%; font-size: 0.75rem; width: 18px; height: 18px; text-align: center; line-height: 18px; font-weight: 700;">0</span>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="chat-area">
+            <div class="chat-header" id="chat-header">
+                <div class="avatar online" id="header-avatar"><i data-lucide="code"></i></div>
+                <div>
+                    <h3 style="margin: 0; font-size: 1.1rem;" id="header-name">Alex Developer</h3>
+                    <p style="margin: 0; font-size: 0.8rem; color: #10b981;" id="header-status">Online</p>
+                </div>
+            </div>
+            
+            <div class="chat-messages" id="chat-messages">
+                <div class="message received">
+                    Hey! I just reviewed the pull request for the new portfolio backend. It looks fantastic. 🚀
+                    <div class="message-time">10:42 AM</div>
+                </div>
+                <div class="message received">
+                    Are we still on track to deploy it this week?
+                    <div class="message-time">10:43 AM</div>
+                </div>
+                
+                <!-- Typing Indicator -->
+                <div class="typing" id="typing-indicator">
+                    <span></span><span></span><span></span>
+                </div>
+            </div>
+
+            <form class="chat-input-area" id="chat-form">
+                <i data-lucide="paperclip" style="color: #94a3b8; cursor: pointer;"></i>
+                <input type="text" class="chat-input" id="message-input" placeholder="Type a message..." autocomplete="off">
+                <button type="submit" class="send-btn"><i data-lucide="send" style="width: 20px; height: 20px; margin-left: -2px; margin-top: 2px;"></i></button>
+            </form>
+        </main>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        lucide.createIcons();
+        
+        const socket = io();
+        const form = document.getElementById('chat-form');
+        const input = document.getElementById('message-input');
+        const messagesContainer = document.getElementById('chat-messages');
+        const typingIndicator = document.getElementById('typing-indicator');
+        
+        // Randomly assign the user an ID for the session to distinguish sent/received
+        const myUserId = Math.random().toString(36).substr(2, 9);
+        let activeRoom = 'alex';
+
+        // Rooms database with message history
+        const rooms = {
+            'alex': {
+                name: 'Alex Developer',
+                icon: 'code',
+                status: 'Online',
+                statusColor: '#10b981',
+                messages: [
+                    { text: 'Hey! I just reviewed the pull request for the new portfolio backend. It looks fantastic. 🚀', sender: 'received', time: '10:42 AM' },
+                    { text: 'Are we still on track to deploy it this week?', sender: 'received', time: '10:43 AM' }
+                ],
+                unread: 0
+            },
+            'sarah': {
+                name: 'Sarah Designer',
+                icon: 'palette',
+                status: 'Offline',
+                statusColor: '#94a3b8',
+                messages: [
+                    { text: 'Hi Kavya, I updated the Figma file with the new glassmorphism layouts.', sender: 'received', time: 'Yesterday' },
+                    { text: 'Let me know if you need any adjustments to the colors!', sender: 'received', time: 'Yesterday' }
+                ],
+                unread: 0
+            },
+            'team': {
+                name: 'Project Team',
+                icon: 'users',
+                status: 'Online',
+                statusColor: '#10b981',
+                messages: [
+                    { text: 'Meeting at 3 PM today to discuss milestones.', sender: 'received', time: '9:15 AM' }
+                ],
+                unread: 0
+            }
+        };
+        
+        const formatTime = () => {
+            const now = new Date();
+            let hours = now.getHours();
+            let minutes = now.getMinutes();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12; 
+            minutes = minutes < 10 ? '0' + minutes : minutes;
+            return `${hours}:${minutes} ${ampm}`;
+        };
+
+        // Render message in UI
+        const addMessage = (text, type, time, roomId) => {
+            const formattedTime = time || formatTime();
+            
+            // If the message is for the active room, add to the DOM
+            if (roomId === activeRoom) {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = `message ${type}`;
+                msgDiv.innerHTML = `
+                    ${text}
+                    <div class="message-time">${formattedTime}</div>
+                `;
+                
+                // Insert before typing indicator
+                messagesContainer.insertBefore(msgDiv, typingIndicator);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+            
+            // Update sidebar preview text
+            const previewText = document.getElementById(`preview-${roomId}`);
+            if (previewText) {
+                previewText.textContent = type === 'sent' ? `You: ${text}` : text;
+            }
+        };
+
+        // Switch rooms
+        const loadRoom = (roomId) => {
+            activeRoom = roomId;
+            const room = rooms[roomId];
+
+            // Update header info
+            document.getElementById('header-name').textContent = room.name;
+            const statusEl = document.getElementById('header-status');
+            statusEl.textContent = room.status;
+            statusEl.style.color = room.statusColor;
+
+            const avatarEl = document.getElementById('header-avatar');
+            avatarEl.className = `avatar ${room.status === 'Online' ? 'online' : ''}`;
+            avatarEl.innerHTML = `<i data-lucide="${room.icon}"></i>`;
+            lucide.createIcons();
+
+            // Clear typing indicator
+            typingIndicator.style.display = 'none';
+
+            // Remove all existing messages
+            const msgDivs = messagesContainer.querySelectorAll('.message');
+            msgDivs.forEach(div => div.remove());
+
+            // Clear unread badge
+            room.unread = 0;
+            const badge = document.getElementById(`unread-${roomId}`);
+            badge.style.display = 'none';
+            badge.textContent = '0';
+
+            // Populate room messages
+            room.messages.forEach(msg => {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = `message ${msg.sender}`;
+                msgDiv.innerHTML = `
+                    ${msg.text}
+                    <div class="message-time">${msg.time}</div>
+                `;
+                messagesContainer.insertBefore(msgDiv, typingIndicator);
+            });
+
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        };
+        
+        // Listen for incoming messages from the server
+        socket.on('chat message', (data) => {
+            if (data.userId === myUserId) {
+                return;
+            }
+            
+            const targetRoom = data.room || 'alex';
+            
+            // Add message to memory history
+            rooms[targetRoom].messages.push({
+                text: data.text,
+                sender: 'received',
+                time: formatTime()
+            });
+
+            if (targetRoom === activeRoom) {
+                typingIndicator.style.display = 'none';
+                addMessage(data.text, 'received', formatTime(), targetRoom);
+            } else {
+                // Increment unread count for inactive rooms
+                rooms[targetRoom].unread++;
+                const badge = document.getElementById(`unread-${targetRoom}`);
+                if (badge) {
+                    badge.style.display = 'block';
+                    badge.textContent = rooms[targetRoom].unread;
+                }
+                // Update sidebar preview
+                const previewText = document.getElementById(`preview-${targetRoom}`);
+                if (previewText) {
+                    previewText.textContent = data.text;
+                }
+            }
+        });
+
+        // Listen for typing events from other users
+        socket.on('typing', (data) => {
+            if (data.room === activeRoom && data.userId !== myUserId) {
+                if (data.isTyping) {
+                    typingIndicator.style.display = 'block';
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                } else {
+                    typingIndicator.style.display = 'none';
+                }
+            }
+        });
+
+        // Submit form
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const text = input.value.trim();
+            if (!text) return;
+            
+            // Add to active room history memory
+            rooms[activeRoom].messages.push({
+                text: text,
+                sender: 'sent',
+                time: formatTime()
+            });
+
+            // Display in active chat UI
+            addMessage(text, 'sent', formatTime(), activeRoom);
+            
+            // Show typing indicator if messaging the bot
+            if (text.toLowerCase().includes('@bot')) {
+                typingIndicator.style.display = 'block';
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+            
+            // Send to server
+            socket.emit('chat message', {
+                text: text,
+                userId: myUserId,
+                room: activeRoom
+            });
+            
+            // Send stop typing status
+            socket.emit('typing', {
+                userId: myUserId,
+                room: activeRoom,
+                isTyping: false
+            });
+
+            input.value = '';
+        });
+
+        // Broadcast Typing Status on keypress
+        let typingTimeout;
+        input.addEventListener('input', () => {
+            socket.emit('typing', {
+                userId: myUserId,
+                room: activeRoom,
+                isTyping: true
+            });
+
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+                socket.emit('typing', {
+                    userId: myUserId,
+                    room: activeRoom,
+                    isTyping: false
+                });
+            }, 1500);
+        });
+
+        // Sidebar Contact Click Listeners
+        document.querySelectorAll('.contact').forEach(contactEl => {
+            contactEl.addEventListener('click', (e) => {
+                const targetContact = e.currentTarget;
+                
+                // Toggle active class
+                document.querySelectorAll('.contact').forEach(c => c.classList.remove('active'));
+                targetContact.classList.add('active');
+                
+                const roomId = targetContact.getAttribute('data-room-id');
+                loadRoom(roomId);
+            });
+        });
+
+        // Initialize with default room
+        loadRoom('alex');
+    </script>
+</body>
+</html>

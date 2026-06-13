@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Commerce Demo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .demo-nav { padding: 1rem 5%; display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100;}
+        .demo-nav-logo { font-size: 1.5rem; font-weight: 700; color: #fff;}
+        .cart-btn { background: var(--accent-1); color: white; padding: 0.5rem 1rem; border-radius: 8px; border: none; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;}
+        
+        /* Search Bar */
+        .search-bar { max-width: 500px; margin: 2rem auto 0; display: flex; gap: 0.5rem; }
+        .search-input { flex: 1; padding: 0.8rem 1.5rem; border-radius: 30px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.2); color: white; font-family: 'Inter', sans-serif;}
+        
+        .products-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; padding: 2rem 5%; }
+        .product-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 1.5rem; text-align: center; transition: transform 0.3s;}
+        .product-card:hover { transform: translateY(-5px); }
+        .product-img { width: 100%; height: 200px; background: linear-gradient(135deg, #334155, #1e293b); border-radius: 8px; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center;}
+        .product-title { font-size: 1.2rem; margin-bottom: 0.5rem;}
+        .product-price { font-size: 1.5rem; color: var(--accent-2); font-weight: 700; margin-bottom: 1rem;}
+        
+        /* AI Recommendations */
+        .recommendation-banner { background: linear-gradient(90deg, rgba(139, 92, 246, 0.2), rgba(59, 130, 246, 0.2)); border: 1px solid #8b5cf6; margin: 0 5% 2rem; padding: 1.5rem; border-radius: 12px; display: none; align-items: center; justify-content: space-between;}
+        
+        .toast { position: fixed; bottom: 20px; right: 20px; background: var(--accent-1); color: white; padding: 1rem 2rem; border-radius: 8px; transform: translateY(100px); opacity: 0; transition: all 0.3s; z-index: 1000;}
+        .toast.show { transform: translateY(0); opacity: 1; }
+
+        /* Cart Drawer Styles */
+        .cart-drawer {
+            position: fixed;
+            top: 0;
+            right: -400px; /* Hidden by default */
+            width: 400px;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .cart-drawer.open {
+            right: 0;
+        }
+        .cart-drawer-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .cart-drawer-header h3 {
+            font-size: 1.3rem;
+            margin: 0;
+        }
+        .close-cart-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+        .close-cart-btn:hover {
+            color: white;
+        }
+        .cart-drawer-items {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .empty-cart-msg {
+            color: #94a3b8;
+            text-align: center;
+            margin-top: 2rem;
+        }
+        .cart-drawer-item {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .cart-item-img {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-2);
+        }
+        .cart-item-info {
+            flex: 1;
+        }
+        .cart-item-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 0.2rem;
+        }
+        .cart-item-price {
+            font-size: 0.9rem;
+            color: var(--accent-2);
+            font-weight: 700;
+        }
+        .cart-item-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        .qty-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0,0,0,0.2);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            transition: background 0.2s;
+        }
+        .qty-btn:hover {
+            background: var(--accent-1);
+            border-color: var(--accent-1);
+        }
+        .qty-val {
+            font-size: 0.9rem;
+            min-width: 15px;
+            text-align: center;
+        }
+        .remove-item-btn {
+            background: transparent;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: opacity 0.2s;
+        }
+        .remove-item-btn:hover {
+            opacity: 0.8;
+        }
+        .cart-drawer-footer {
+            padding: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0,0,0,0.2);
+        }
+        .cart-subtotal {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        #cart-subtotal-val {
+            color: var(--accent-2);
+            font-weight: 700;
+        }
+        .cart-drawer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .cart-drawer-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        @media (max-width: 480px) {
+            .cart-drawer {
+                width: 100%;
+                right: -100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-shape shape-1"></div>
+    <div class="bg-shape shape-2"></div>
+    <div class="bg-shape shape-3"></div>
+
+    <nav class="demo-nav">
+        <a href="index.html" style="color: white; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;"><i data-lucide="arrow-left"></i> Back</a>
+        <div class="demo-nav-logo">TechStore<span style="color: var(--accent-1);">.</span></div>
+        <button class="cart-btn" id="cart-btn">
+            <i data-lucide="shopping-cart"></i>
+            Cart (<span id="cart-count">0</span>)
+        </button>
+    </nav>
+
+    <main>
+        <div style="text-align: center; padding-top: 3rem; padding-bottom: 1rem;">
+            <h1 class="hero-title" style="font-size: 2.5rem;">Latest Products</h1>
+            <p>Live functional demo with Search, Cart Persistence, and AI Recommendations.</p>
+            
+            <div class="search-bar" style="padding: 0 2rem;">
+                <input type="text" id="search-input" class="search-input" placeholder="Search for products (e.g., laptop)...">
+            </div>
+        </div>
+
+        <div class="recommendation-banner" id="recommendation-banner">
+            <div>
+                <h3 style="margin: 0 0 0.5rem 0; color: #8b5cf6; display: flex; align-items: center; gap: 0.5rem;"><i data-lucide="sparkles" style="width: 20px;"></i> AI Recommended</h3>
+                <p style="margin: 0; font-size: 0.9rem;" id="recommendation-text">Based on your cart, we recommend...</p>
+            </div>
+            <button class="btn-primary" id="add-recommendation" style="padding: 0.5rem 1rem;">Add to Cart</button>
+        </div>
+
+        <div class="products-grid" id="products-grid">
+            <div class="product-card" data-name="Pro Laptop M2" data-id="laptop">
+                <div class="product-img"><i data-lucide="laptop" style="width: 60px; height: 60px; color: #94a3b8;"></i></div>
+                <h3 class="product-title">Pro Laptop M2</h3>
+                <div class="product-price">$1,299</div>
+                <button class="btn-primary w-full add-to-cart" data-id="laptop">Add to Cart</button>
+            </div>
+            <div class="product-card" data-name="Smartphone X" data-id="phone">
+                <div class="product-img"><i data-lucide="smartphone" style="width: 60px; height: 60px; color: #94a3b8;"></i></div>
+                <h3 class="product-title">Smartphone X</h3>
+                <div class="product-price">$899</div>
+                <button class="btn-primary w-full add-to-cart" data-id="phone">Add to Cart</button>
+            </div>
+            <div class="product-card" data-name="Wireless Headphones" data-id="headphones">
+                <div class="product-img"><i data-lucide="headphones" style="width: 60px; height: 60px; color: #94a3b8;"></i></div>
+                <h3 class="product-title">Wireless Headphones</h3>
+                <div class="product-price">$249</div>
+                <button class="btn-primary w-full add-to-cart" data-id="headphones">Add to Cart</button>
+            </div>
+            <div class="product-card" data-name="Smart Watch Pro" data-id="watch">
+                <div class="product-img"><i data-lucide="watch" style="width: 60px; height: 60px; color: #94a3b8;"></i></div>
+                <h3 class="product-title">Smart Watch Pro</h3>
+                <div class="product-price">$399</div>
+                <button class="btn-primary w-full add-to-cart" data-id="watch">Add to Cart</button>
+            </div>
+        </div>
+    </main>
+
+    <div class="toast" id="toast">Item added to cart!</div>
+
+    <!-- Sliding Cart Drawer -->
+    <div class="cart-drawer" id="cart-drawer">
+        <div class="cart-drawer-header">
+            <h3>Your Cart</h3>
+            <button class="close-cart-btn" id="close-cart-btn"><i data-lucide="x"></i></button>
+        </div>
+        <div class="cart-drawer-items" id="cart-drawer-items">
+            <!-- Items will be generated dynamically -->
+            <p class="empty-cart-msg">Your cart is empty.</p>
+        </div>
+        <div class="cart-drawer-footer">
+            <div class="cart-subtotal">
+                <span>Subtotal:</span>
+                <span id="cart-subtotal-val">$0</span>
+            </div>
+            <button class="btn-primary w-full" id="checkout-btn">Checkout</button>
+        </div>
+    </div>
+    <div class="cart-drawer-overlay" id="cart-drawer-overlay"></div>
+
+    <script>
+        lucide.createIcons();
+        
+        // Element Selectors
+        const cartBtn = document.getElementById('cart-btn');
+        const closeCartBtn = document.getElementById('close-cart-btn');
+        const cartDrawer = document.getElementById('cart-drawer');
+        const cartOverlay = document.getElementById('cart-drawer-overlay');
+        const cartDrawerItems = document.getElementById('cart-drawer-items');
+        const cartSubtotalVal = document.getElementById('cart-subtotal-val');
+        const checkoutBtn = document.getElementById('checkout-btn');
+        const cartCountEl = document.getElementById('cart-count');
+        const toast = document.getElementById('toast');
+        const searchInput = document.getElementById('search-input');
+        const productCards = document.querySelectorAll('.product-card');
+        const recommendationBanner = document.getElementById('recommendation-banner');
+        const recommendationText = document.getElementById('recommendation-text');
+        const addRecommendationBtn = document.getElementById('add-recommendation');
+        
+        // Product registry to look up details
+        const productsDb = {
+            'laptop': { name: 'Pro Laptop M2', price: 1299, icon: 'laptop' },
+            'phone': { name: 'Smartphone X', price: 899, icon: 'smartphone' },
+            'headphones': { name: 'Wireless Headphones', price: 249, icon: 'headphones' },
+            'watch': { name: 'Smart Watch Pro', price: 399, icon: 'watch' }
+        };
+
+        // Load cart from Local Storage
+        let cart = JSON.parse(localStorage.getItem('techstore_cart_items')) || {};
+        let lastAddedItem = localStorage.getItem('techstore_lastItem') || '';
+
+        const showToast = (msg) => {
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        };
+
+        // Toggle Cart Drawer
+        const toggleCart = (isOpen) => {
+            if (isOpen) {
+                cartDrawer.classList.add('open');
+                cartOverlay.classList.add('open');
+            } else {
+                cartDrawer.classList.remove('open');
+                cartOverlay.classList.remove('open');
+            }
+        };
+
+        // Save Cart to Local Storage and update count badge
+        const saveCart = () => {
+            localStorage.setItem('techstore_cart_items', JSON.stringify(cart));
+            const totalQty = Object.values(cart).reduce((sum, item) => sum + item.qty, 0);
+            cartCountEl.textContent = totalQty;
+            localStorage.setItem('techstore_cart', totalQty);
+        };
+
+        // Render items inside the drawer
+        const renderCartItems = () => {
+            cartDrawerItems.innerHTML = '';
+            const items = Object.keys(cart);
+
+            if (items.length === 0) {
+                cartDrawerItems.innerHTML = '<p class="empty-cart-msg">Your cart is empty.</p>';
+                cartSubtotalVal.textContent = '$0';
+                return;
+            }
+
+            let subtotal = 0;
+
+            items.forEach(itemId => {
+                const item = cart[itemId];
+                const itemTotal = item.price * item.qty;
+                subtotal += itemTotal;
+
+                const itemHTML = `
+                    <div class="cart-drawer-item">
+                        <div class="cart-item-img">
+                            <i data-lucide="${item.icon || 'shopping-bag'}"></i>
+                        </div>
+                        <div class="cart-item-info">
+                            <div class="cart-item-title">${item.name}</div>
+                            <div class="cart-item-price">$${itemTotal.toLocaleString()}</div>
+                        </div>
+                        <div class="cart-item-controls">
+                            <button class="qty-btn dec-qty" data-id="${itemId}">-</button>
+                            <span class="qty-val">${item.qty}</span>
+                            <button class="qty-btn inc-qty" data-id="${itemId}">+</button>
+                            <button class="remove-item-btn" data-id="${itemId}" style="margin-left: 0.5rem;"><i data-lucide="trash-2" style="width: 16px; height: 16px;"></i></button>
+                        </div>
+                    </div>
+                `;
+                cartDrawerItems.innerHTML += itemHTML;
+            });
+
+            cartSubtotalVal.textContent = `$${subtotal.toLocaleString()}`;
+            lucide.createIcons();
+
+            // Setup Event Listeners for new items
+            document.querySelectorAll('.dec-qty').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.target.getAttribute('data-id');
+                    updateItemQty(id, -1);
+                });
+            });
+
+            document.querySelectorAll('.inc-qty').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.target.getAttribute('data-id');
+                    updateItemQty(id, 1);
+                });
+            });
+
+            document.querySelectorAll('.remove-item-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.currentTarget.getAttribute('data-id');
+                    removeItemFromCart(id);
+                });
+            });
+        };
+
+        // Increment / Decrement Quantity
+        const updateItemQty = (itemId, change) => {
+            if (cart[itemId]) {
+                cart[itemId].qty += change;
+                if (cart[itemId].qty <= 0) {
+                    delete cart[itemId];
+                }
+                saveCart();
+                renderCartItems();
+            }
+        };
+
+        // Remove Item completely
+        const removeItemFromCart = (itemId) => {
+            if (cart[itemId]) {
+                delete cart[itemId];
+                saveCart();
+                renderCartItems();
+            }
+        };
+
+        // AI Recommendation Engine
+        const updateRecommendations = (itemId) => {
+            const rules = {
+                'laptop': { recommend: 'Wireless Headphones', reason: 'Great audio for your new laptop setup!', id: 'headphones' },
+                'phone': { recommend: 'Smart Watch Pro', reason: 'Syncs perfectly with your new smartphone.', id: 'watch' },
+                'watch': { recommend: 'Wireless Headphones', reason: 'Listen to music directly from your watch.', id: 'headphones' },
+                'headphones': { recommend: 'Smartphone X', reason: 'The perfect device to stream music to your headphones.', id: 'phone' }
+            };
+            
+            if (rules[itemId]) {
+                const rec = rules[itemId];
+                recommendationText.textContent = `${rec.reason} Add ${rec.recommend} for a complete bundle.`;
+                recommendationBanner.style.display = 'flex';
+                
+                // Remove old event listeners
+                const newBtn = addRecommendationBtn.cloneNode(true);
+                addRecommendationBtn.parentNode.replaceChild(newBtn, addRecommendationBtn);
+                
+                newBtn.addEventListener('click', () => {
+                    addToCart(rec.id);
+                    recommendationBanner.style.display = 'none'; // hide after accepting
+                });
+            }
+        };
+
+        // Add to Cart Logic
+        const addToCart = (itemId) => {
+            const prod = productsDb[itemId];
+            if (!prod) return;
+
+            if (cart[itemId]) {
+                cart[itemId].qty++;
+            } else {
+                cart[itemId] = {
+                    name: prod.name,
+                    price: prod.price,
+                    icon: prod.icon,
+                    qty: 1
+                };
+            }
+
+            saveCart();
+            renderCartItems();
+            localStorage.setItem('techstore_lastItem', itemId);
+            showToast(`${prod.name} added to cart!`);
+            updateRecommendations(itemId);
+            toggleCart(true); // Open drawer automatically
+        };
+
+        // Event Listeners for UI interaction
+        cartBtn.addEventListener('click', () => toggleCart(true));
+        closeCartBtn.addEventListener('click', () => toggleCart(false));
+        cartOverlay.addEventListener('click', () => toggleCart(false));
+
+        document.querySelectorAll('.add-to-cart').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const itemId = e.target.closest('button').getAttribute('data-id');
+                addToCart(itemId);
+            });
+        });
+
+        checkoutBtn.addEventListener('click', () => {
+            alert('🎉 Thank you for your order! Checkout successful.');
+            cart = {};
+            saveCart();
+            renderCartItems();
+            toggleCart(false);
+        });
+
+        // Initialize recommendation if page reloaded
+        if (lastAddedItem) {
+            updateRecommendations(lastAddedItem);
+        }
+
+        // Search and Filtering
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            productCards.forEach(card => {
+                const name = card.getAttribute('data-name').toLowerCase();
+                if (name.includes(term)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+
+        // Initial render
+        saveCart(); // Sync storage
+        renderCartItems();
+    </script>
+</body>
+</html>

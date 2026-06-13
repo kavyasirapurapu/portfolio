@@ -3,10 +3,14 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const mongoose = require('mongoose');
+const http = require('http');
+const { Server } = require('socket.io');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const server = http.createServer(app);
+const io = new Server(server);
 
+const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -53,7 +57,7 @@ app.get('/api/projects', async (req, res) => {
             title: 'E-Commerce Platform',
             description: 'A full-stack e-commerce solution with modern UI, secure payment integration, and real-time inventory management.',
             tags: ['React', 'Node.js', 'MongoDB'],
-            liveLink: 'https://example.com',
+            liveLink: './ecommerce.html',
             codeLink: 'https://github.com',
             video: 'https://www.w3schools.com/html/mov_bbb.mp4',
             icon: 'shopping-bag',
@@ -64,7 +68,7 @@ app.get('/api/projects', async (req, res) => {
             title: 'Fitness Tracker',
             description: 'A dynamic web app for tracking daily workouts, visualizing progress with interactive charts, and goal setting.',
             tags: ['Vue.js', 'Firebase', 'Chart.js'],
-            liveLink: 'https://example.com',
+            liveLink: './fitness.html',
             codeLink: 'https://github.com',
             icon: 'activity',
             color1: '#10b981',
@@ -74,7 +78,7 @@ app.get('/api/projects', async (req, res) => {
             title: 'Real-time Chat App',
             description: 'A fast and secure messaging application featuring private rooms, media sharing, and instant notifications.',
             tags: ['Socket.io', 'Express', 'React'],
-            liveLink: 'https://example.com',
+            liveLink: './chat.html',
             codeLink: 'https://github.com',
             icon: 'message-square',
             color1: '#f59e0b',
@@ -125,8 +129,54 @@ app.post('/api/contact', async (req, res) => {
     }
 });
 
+// Socket.io integration for the Chat App demo
+io.on('connection', (socket) => {
+    console.log('A user connected to the chat demo');
+    
+    // Broadcast incoming message to all connected clients
+    socket.on('chat message', (msg) => {
+        // Broadcast the original message
+        io.emit('chat message', msg);
+        
+        // AI Chatbot Logic
+        if (msg.text && msg.text.toLowerCase().includes('@bot')) {
+            const query = msg.text.toLowerCase();
+            let response = "I'm not sure about that! I'm an AI still in training. 🤖";
+            
+            if (query.includes('hi') || query.includes('hello')) {
+                response = "Hello there! I am your AI assistant. How can I help you today?";
+            } else if (query.includes('portfolio') || query.includes('who made this')) {
+                response = "This portfolio and chat app were built by Kavya, a talented 2nd-year AI & Data Science student! 🚀";
+            } else if (query.includes('weather')) {
+                response = "I don't have sensors outside, but it's always sunny in the cloud! ☁️☀️";
+            } else if (query.includes('hire') || query.includes('job')) {
+                response = "You should definitely hire Kavya! She has excellent full-stack and AI integration skills.";
+            }
+            
+            // Simulate AI "thinking" delay
+            setTimeout(() => {
+                io.emit('chat message', {
+                    text: response,
+                    userId: 'bot-12345',
+                    isBot: true,
+                    room: msg.room || 'alex'
+                });
+            }, 1500);
+        }
+    });
+
+    // Listen for typing events and broadcast to others
+    socket.on('typing', (data) => {
+        socket.broadcast.emit('typing', data);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('A user disconnected');
+    });
+});
+
 // Start the server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`\n========================================`);
     console.log(`Backend Server is running!`);
     console.log(`Access your portfolio at: http://localhost:${PORT}`);
