@@ -184,7 +184,7 @@ if (projectsGrid) {
                                     ${tagsHTML}
                                 </div>
                                 <div class="project-links">
-                                    <a href="${project.liveLink || '#'}" target="_blank" rel="noopener noreferrer" class="project-link">Live Demo</a>
+                                    <a href="${project.liveLink || '#'}" class="project-link live-demo-btn">Live Demo</a>
                                     <a href="${project.codeLink || '#'}" target="_blank" rel="noopener noreferrer" class="project-link">Code</a>
                                 </div>
                             </div>
@@ -204,3 +204,57 @@ if (projectsGrid) {
     
     document.addEventListener('DOMContentLoaded', loadProjects);
 }
+
+// Live Demo Preview Modal Controller
+document.addEventListener('DOMContentLoaded', () => {
+    const previewModal = document.getElementById('preview-modal');
+    const previewIframe = document.getElementById('preview-iframe');
+    const previewBrowserUrl = document.getElementById('preview-browser-url');
+    const previewCloseBtn = document.getElementById('preview-close-btn');
+
+    // Handle live demo button click
+    document.body.addEventListener('click', (e) => {
+        const btn = e.target.closest('.live-demo-btn');
+        if (btn) {
+            e.preventDefault();
+            const url = btn.getAttribute('href');
+            
+            // Set URL in mock browser search bar
+            if (url.startsWith('./') || url.startsWith('/')) {
+                // If local relative URL, build clean mock server URL
+                const fileName = url.replace(/^\.\//, '');
+                previewBrowserUrl.textContent = `http://localhost:3000/${fileName}`;
+            } else {
+                previewBrowserUrl.textContent = url;
+            }
+
+            previewIframe.src = url;
+            previewModal.classList.add('open');
+            document.body.style.overflow = 'hidden'; // Lock background scrolling
+        }
+    });
+
+    // Close preview modal
+    const closeModal = () => {
+        if (previewModal) {
+            previewModal.classList.remove('open');
+            previewIframe.src = '';
+            document.body.style.overflow = ''; // Restore scrolling
+        }
+    };
+
+    if (previewCloseBtn) {
+        previewCloseBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeModal();
+        });
+    }
+
+    if (previewModal) {
+        previewModal.addEventListener('click', (e) => {
+            if (e.target === previewModal) {
+                closeModal();
+            }
+        });
+    }
+});
